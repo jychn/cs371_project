@@ -7,21 +7,21 @@ import csv
 
 def packetExtraction(x, flowList, flowLabel):
     '''
-    Function: Extracts packet data to determine flows in network.
+    Extracts packet data to determine flows in the network, and adds each flow
+    to the list of flows.
     '''
 
+    # Output each packet to ensure sniff() is functional
     print(x.sprintf("{IP:%IP.src%,%IP.dst%,}"
                     "{TCP:%TCP.sport%,%TCP.dport%}"
                     "{UDP:%UDP.sport%,%UDP.dport%}"))
-    '''print(x.sprintf("IP:({IP:%IP.src%,%IP.dst%}), "
-                    "TCP:({TCP:%TCP.sport%,%TCP.dport%}), "
-                    "UDP:({UDP:%UDP.sport%,%UDP.dport%})"))'''
 
     # Assign packet values to variables
     srceIP = x.sprintf("{IP:%IP.src%}")
     srcePort = x.sprintf("{TCP:%TCP.sport%}{UDP:%UDP.sport%}")
     destIP = x.sprintf("{IP:%IP.dst%}")
     destPort = x.sprintf("{TCP:%TCP.dport%}{UDP:%UDP.dport%}")
+    # Protocol is 0 for TCP, 1 for UDP
     protocol = 0
     if (x.sprintf("{TCP:tcp}{UDP:udp}") == "udp"): protocol = 1
     timeReceived = float(x.time)
@@ -81,8 +81,8 @@ def packetExtraction(x, flowList, flowLabel):
 
 def outputToFlowCSV(flowList):
     '''
-    Create a CSV file given a list of flows using flows that consist of at least
-    10 packets, or append to it if it already exists.
+    Create a CSV file given a list of flows, or append to the file if it already
+    exists.
     '''
 
     # Open or create a CSV file to write flows to
@@ -90,13 +90,16 @@ def outputToFlowCSV(flowList):
         # Creater writer to write flows to file
         flowWriter = csv.writer(flowsCSV, delimiter=',')
 
-        # Only write flows with more than 10 packets
+        # Write flow-by-flow to file
         for flow in flowList:
             flowWriter.writerow(flow)
 
 
 def trimFlowList(flowList):
-
+    '''
+    Eliminate noise and useless flows by returning only flows that consist of
+    10 packets or more.
+    '''
     trimmedFlowList = []
     for flow in flowList:
         if (flow[9] >= 10):
@@ -115,18 +118,21 @@ def main():
     # Initial empty flow list
     flowList = []
 
-
     for label in labelList:
+        # Before sniffing, prompt user to begin activity for given scenario
         input("Start sniffing for " + label + " data?")
 
+        # Repeat sniffing until at least 25 samples per scenario
         while (len(flowList) <= 25):
             print("Continue activity..")
             pkts = sniff(prn = lambda x: packetExtraction(x, flowList, labelList.index(label) + 1), count = 2000)
+
+            # Eliminate packets noise and useless flows
             flowList = trimFlowList(flowList)
 
+        # Output flows for the given scenario to CSV and then reset flowList for
+        # next scenario
         outputToFlowCSV(flowList)
         flowList = []
 
 main()
-#for pkt in pkts:
-# pkts[0].show()
