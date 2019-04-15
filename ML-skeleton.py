@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import csv
-import matplotlib as mpl
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
@@ -12,13 +12,15 @@ from sklearn.metrics import classification_report
 from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn import tree
+import scikitplot as skplt
 
+def average(numList):
+    return sum(numList) / len(numList)
 
-
+# Read in CSV file into pandas Dataframe data structure
 df = pd.read_csv("data.csv", header=None)
-# You might not need this next line if you do not care about losing information
-# about flow_id etc. All you actually need to feed your machine learning model
-# are features and output label.
+
+# Label columns in dataframe
 columns_list = ['srceIP',
                 'srcePort',
                 'destIP',
@@ -34,34 +36,138 @@ columns_list = ['srceIP',
                 'duration',
                 'label']
 df.columns = columns_list
-features = ['protocol', 'sentPkts', 'sentBytes', 'recvPkts', 'recvBytes', 'totalPkts', 'totalBytes', 'duration']
 
-print(df)
+# Create list of features to test in model
+features = [
+            #'protocol',
+            #'sentPkts',
+            #'sentBytes',
+            #'recvPkts',
+            #'recvBytes',
+            'totalPkts',
+            'totalBytes',
+            'duration'
+            ]
+# Observations:
+#   1. Removing protocol increases precision of accuracy score
+#   2. sentPkts + recvPkts: ~0.40 accuracy
+#   3. sentPkts + recvPkts + totalPkts + duration: ~0.40-0.50
 
+print("Features used for training models: ")
+for feature in features:
+    print("\t" + feature)
+
+# List of labels follow 1 = Web Browsing, 2 = Video Streaming,
+# 3 = Video Conferencing, 4 = File Downloading
+labels = ['1', '2', '3', '4']
+
+# Create X and Y values from datafram
 X = df[features]
 y = df['label']
+#print(X)
+#print(y)
 
-acc_scores = 0
+# Since machine learning model will be ran 10 times for cross validation, create
+# lists to store results of each metric for each ML alogirthm.
+
+# For DecisionTreeClassifier
+dtcAccuracyScores = []
+dtcPrecisionScores =[]
+dtcRecallScores = []
+dtcF1Scores = []
+
+# For Neural Network (Multi-layer Perceptron Classifier)
+mlpAccuracyScores = []
+mlpPrecisionScores =[]
+mlpRecallScores = []
+mlpF1Scores = []
+
+# For support vector machines
+svcAccuracyScores = []
+svcPrecisionScores =[]
+svcRecallScores = []
+svcF1Scores = []
+
+accuracyScores = []
+
+
 for i in range(0, 10):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25)
+    # Split dataset into training set and testing set
+    # train_test_split tutorial: https://www.youtube.com/watch?v=fwY9Qv96DJY
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
 
-    # Decision Trees algorithm
-    clf = tree.DecisionTreeClassifier()
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
-    f1Score = f1_score(y_pred, y_test, average=None)
-    print("Decision Tree F1 score: " + str(f1Score))
+    # DECISION TREE CLASSIFIER MACHINE LEARNING MODEL
+    dtc = tree.DecisionTreeClassifier()
+    dtc.fit(X_train, y_train)
+    y_pred = dtc.predict(X_test)
+    dtcAccuracyScores.append(accuracy_score(y_test, y_pred))
+    dtcPrecisionScores.append(precision_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    dtcRecallScores.append(recall_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    dtcF1Scores.append(f1_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    skplt.metrics.plot_confusion_matrix(y_test, y_pred, normalize=True)
+    # plt.show()
+    # print(classification_report(y_test, y_pred, target_names=labels))
 
-    # Neural network (MultiPerceptron Classifier)
-    # clf = MLPClassifier()
-    # clf.fit(X_train, y_train)
+    # NEURAL NETWORK (MULTI-LAYER PERCEPTRON CLASSIFIER) MACHINE LEARNING MODEL
+    mlp = MLPClassifier()
+    mlp.fit(X_train, y_train)
+    y_pred = mlp.predict(X_test)
+    mlpAccuracyScores.append(accuracy_score(y_test, y_pred))
+    mlpPrecisionScores.append(precision_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    mlpRecallScores.append(recall_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    mlpF1Scores.append(f1_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
 
-    #SVM's
-    #clf = SVC(gamma='auto')     #SVC USE THIS
-    #clf = LinearSVC()  #Linear SVC
-    #clf.fit(X_train, y_train)
+
+    # SUPPORT VECTOR MACHINE MACHINE LEARNING MODEL
+    svc = SVC(gamma='auto')     #SVC USE THIS
+    # svc = LinearSVC()  #Linear SVC
+    svc.fit(X_train, y_train)
+    y_pred = svc.predict(X_test)
+    svcAccuracyScores.append(accuracy_score(y_test, y_pred))
+    svcPrecisionScores.append(precision_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    svcRecallScores.append(recall_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
+    svcF1Scores.append(f1_score(y_test, y_pred, average='weighted', labels=np.unique(y_pred)))
 
 
-    #here you are supposed to calculate the evaluation measures indicated in the project proposal (accuracy, F-score etc)
-    result = clf.score(X_test, y_test)  #accuracy score
-    print("Accuracy score for : " + str(result))
+# EVALUATING METRICS INFORMATION
+# Print out average metrics for each algorithm
+# Average accuracy for each algorithm
+print("Average accuracy of dtc: " + str(average(dtcAccuracyScores)))
+print("Average accuracy of mlp: " + str(average(mlpAccuracyScores)))
+print("Average accuracy of svc: " + str(average(svcAccuracyScores)))
+
+
+# Average precision for each algorithm
+print("Average precision of dtc: " + str(average(dtcPrecisionScores)))
+print("Average precision of mlp: " + str(average(mlpPrecisionScores)))
+print("Average precision of svc: " + str(average(svcPrecisionScores)))
+
+# Average recall for each algorithm
+print("Average recall of dtc: " + str(average(dtcRecallScores)))
+print("Average recall of mlp: " + str(average(mlpRecallScores)))
+print("Average recall of svc: " + str(average(svcRecallScores)))
+
+# Average F1 scores for each algorithm
+print("Average F1 score of dtc: " + str(average(dtcF1Scores)))
+print("Average F1 score of mlp: " + str(average(mlpF1Scores)))
+print("Average F1 score of svc: " + str(average(svcF1Scores)))
+
+
+'''
+# Print out arrays to see resulting metric values
+print("Accuracy scores for dtc: " + str(dtcAccuracyScores))
+print("Precision scores for dtc: " + str(dtcPrecisionScores))
+print("Recall scores for dtc: " + str(dtcRecallScores))
+print("F1 scores for dtc: " + str(dtcF1Scores))
+print()
+print("Accuracy scores for mlp: " + str(mlpAccuracyScores))
+print("Precision scores for mlp: " + str(PrecisionScores))
+print("Recall scores for mlp: " + str(mlpRecallScores))
+print("F1 scores for mlp: " + str(mlpF1Scores))
+print()
+print("Accuracy scores for svc: " + str(svcAccuracyScores))
+print("Precision scores for svc: " + str(svcPrecisionScores))
+print("Recall scores for svc: " + str(svcRecallScores))
+print("F1 scores for svc: " + str(svcF1Scores))
+
+'''
