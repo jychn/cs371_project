@@ -39,20 +39,91 @@ df.columns = columns_list
 
 # Create list of features to test in model
 features = [
-            #'protocol',
-            #'sentPkts',
-            #'sentBytes',
-            #'recvPkts',
-            #'recvBytes',
+            'protocol',
+            'sentPkts',
+            'sentBytes',
+            'recvPkts',
+            'recvBytes',
             'totalPkts',
             'totalBytes',
             'duration'
             ]
-# Observations:
-#   1. Removing protocol increases precision of accuracy score
-#   2. sentPkts + recvPkts: ~0.40 accuracy
-#   3. sentPkts + recvPkts + totalPkts + duration: ~0.40-0.50
 
+# ******************************************************************************
+# //////////
+# EVALUATION PART 1 - Evaluating ML algortihms by feature
+# //////////
+# Bar graph with average accuracy for each feature
+'''
+x_axis = features
+y_axis = []
+for feature in features:
+    X = df[features]
+    y = df['label']
+    accuracyScores = []
+    for i in range(0, 10):
+        # Split dataset into training set and testing set
+        # train_test_split tutorial: https://www.youtube.com/watch?v=fwY9Qv96DJY
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
+
+        # DECISION TREE CLASSIFIER MACHINE LEARNING MODEL
+        dtc = tree.DecisionTreeClassifier()
+        dtc.fit(X_train, y_train)
+        y_pred = dtc.predict(X_test)
+        accuracyScores.append(accuracy_score(y_test, y_pred))
+
+    y_axis.append(average(accuracyScores))
+
+y_pos = np.arange(len(x_axis))
+
+plt.bar(y_pos, y_axis, width=0.5, align='center', alpha=0.3)
+plt.xticks(y_pos, x_axis)
+plt.ylabel('Accuracy')
+plt.title('Decision Tree Classifier: Accuracy by Feature')
+
+plt.show()
+print("Graph for model accuracy given each feature."
+'''
+# Line chart with accuracy of each feature over 10 iterations
+x_axis = list(range(1,11))
+y_axis = []
+for feature in features:
+    X = df[features]
+    y = df['label']
+    accuracyScores = []
+    for i in range(0, 10):
+        # Split dataset into training set and testing set
+        # train_test_split tutorial: https://www.youtube.com/watch?v=fwY9Qv96DJY
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
+
+        # DECISION TREE CLASSIFIER MACHINE LEARNING MODEL
+        dtc = tree.DecisionTreeClassifier()
+        dtc.fit(X_train, y_train)
+        y_pred = dtc.predict(X_test)
+        accuracyScores.append(accuracy_score(y_test, y_pred))
+
+    y_axis.append(accuracyScores)
+
+colors = ["#72a871","#f49169","#a1572a","#a2f622","#f23931","#8172f6","#1ac1e4","#5d4856"]
+i = 0
+for y_set in y_axis:
+    line_chart = plt.plot(x_axis, y_set, colors[i])
+    i += 1
+plt.title("Accuracy of Each Feature Over 10 Iterations")
+plt.xlabel('Iteration')
+plt.ylabel('Accuracy')
+plt.legend(features, loc=4)
+plt.show()
+
+input()
+
+# ******************************************************************************
+
+
+# ******************************************************************************
+# //////////
+# EVALUATION PART 2 - Comparing the different ML algorithms
+# //////////
 print("Features used for training models: ")
 for feature in features:
     print("\t" + feature)
@@ -87,9 +158,6 @@ svcAccuracyScores = []
 svcPrecisionScores =[]
 svcRecallScores = []
 svcF1Scores = []
-
-accuracyScores = []
-
 
 for i in range(0, 10):
     # Split dataset into training set and testing set
