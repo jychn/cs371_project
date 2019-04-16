@@ -123,7 +123,7 @@ def main():
         input("Start sniffing for " + label + " data?")
 
         # Repeat sniffing until at least 25 samples per scenario
-        while (len(flowList) <= 25):
+        while (len(flowList) <= 30):
             print("Continue activity..")
             pkts = sniff(prn = lambda x: packetExtraction(x, flowList, labelList.index(label) + 1), count = 2000)
 
